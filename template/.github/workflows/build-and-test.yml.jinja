@@ -1,9 +1,18 @@
 name: Build and Test
 
+# Contract-only ICC commits should not spend Linux/Windows build minutes.
+# For push and pull_request, GitHub ignores the workflow only when ALL changed
+# files match these two documentation paths. Code/build/test changes still run CI.
 on:
   workflow_dispatch:
   push:
+    paths-ignore:
+      - 'docs/development/essence.md'
+      - 'docs/development/ESSENCE_AUDIT.md'
   pull_request:
+    paths-ignore:
+      - 'docs/development/essence.md'
+      - 'docs/development/ESSENCE_AUDIT.md'
 
 permissions:
   contents: read
