@@ -36,6 +36,9 @@ def main():
     if any(work.iterdir()):
         raise SystemExit("--work-dir must be empty; validation will not overwrite existing projects.")
     copier = [py, "-m", "copier"]
+    run([py, ROOT / "scripts/validate_answers_migration.py"], env=env)
+    import yaml
+    answers_file = yaml.safe_load((ROOT / "copier.yml").read_text(encoding="utf-8"))["_answers_file"]
     # Exercise real Git tags without publishing test tags or changing the source repo.
     fixture = work / "template"
     fixture.mkdir()
@@ -61,7 +64,7 @@ def main():
     custom_data = [*data, "-d", "vcpkg_port_name=ci-packaged-library", "-d", "version=1.2.3rc1"]
     run([*copier, "copy", "--defaults", "--vcs-ref", "v1.0.0", *custom_data, fixture, project], env=env)
     import yaml
-    answers = yaml.safe_load((project / ".copier-answers.yml").read_text(encoding="utf-8"))
+    answers = yaml.safe_load((project / answers_file).read_text(encoding="utf-8"))
     assert answers["_commit"] == "v1.0.0"
     assert answers["vcpkg_port_name"] == "ci-packaged-library"
     assert (project / "vcpkg-ports/ci-packaged-library/portfile.cmake").exists()
@@ -106,8 +109,8 @@ def main():
     run(["git", "add", "."], cwd=fixture)
     run(["git", "commit", "-m", "Template v2"], cwd=fixture)
     run(["git", "tag", "v1.1.0"], cwd=fixture)
-    run([*copier, "update", "--defaults", "--vcs-ref", "v1.1.0"], cwd=project, env=env)
-    updated = yaml.safe_load((project / ".copier-answers.yml").read_text(encoding="utf-8"))
+    run([*copier, "update", "--defaults", "-a", answers_file, "--vcs-ref", "v1.1.0"], cwd=project, env=env)
+    updated = yaml.safe_load((project / answers_file).read_text(encoding="utf-8"))
     assert updated["_commit"] == "v1.1.0"
     assert "Local project note." in readme.read_text(encoding="utf-8")
     assert "Template update marker." in readme.read_text(encoding="utf-8")
@@ -151,14 +154,16 @@ def main():
         run(["git", "config", key, value], cwd=upgraded)
     run(["git", "add", "."], cwd=upgraded)
     run(["git", "commit", "-m", "Previous project with unrelated user edits"], cwd=upgraded)
+    run(["git", "mv", ".copier-answers.yml", answers_file], cwd=upgraded)
+    run(["git", "commit", "-m", "Migrate template answers filename"], cwd=upgraded)
     shutil.rmtree(old / "template")
     shutil.copytree(ROOT / "template", old / "template", ignore=shutil.ignore_patterns(".dev-tools", "__pycache__", "build", "dist"))
     shutil.copy2(ROOT / "copier.yml", old / "copier.yml")
     run(["git", "add", "."], cwd=old)
     run(["git", "commit", "-m", "Add packaging infrastructure"], cwd=old)
     run(["git", "tag", "v2.1.0"], cwd=old)
-    run([*copier, "update", "--defaults", "--vcs-ref", "v2.1.0"], cwd=upgraded, env=env)
-    after = yaml.safe_load((upgraded / ".copier-answers.yml").read_text(encoding="utf-8"))
+    run([*copier, "update", "--defaults", "-a", answers_file, "--vcs-ref", "v2.1.0"], cwd=upgraded, env=env)
+    after = yaml.safe_load((upgraded / answers_file).read_text(encoding="utf-8"))
     assert after["_commit"] == "v2.1.0"
     assert all(after[key] == value for key, value in before.items() if key != "_commit")
     assert user_file.read_text(encoding="utf-8") == "Keep unrelated user work.\n"

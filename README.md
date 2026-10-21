@@ -12,10 +12,10 @@ git init
 git add .
 git commit -m "Generate project"
 # After committing your project changes, update to the latest template revision:
-copier update
+copier update -a .copier-answers.pypackage-cpp.yml
 ```
 
-Copier records answers and the template version in `.copier-answers.yml`; commit it. Release versions are Git tags. The template lives under `template/`, so template metadata and its Git history are not copied into generated projects. Existing Cookiecutter-generated projects need deliberate adoption and review before using Copier updates; this migration does not rewrite those projects.
+Copier records answers and the template version in `.copier-answers.pypackage-cpp.yml`; commit it. Release versions are Git tags. The template lives under `template/`, so template metadata and its Git history are not copied into generated projects. Existing Cookiecutter-generated projects need deliberate adoption and review before using Copier updates; this migration does not rewrite those projects.
 
 ## Fresh Work / Codex / developer setup
 
