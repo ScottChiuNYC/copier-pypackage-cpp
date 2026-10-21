@@ -35,7 +35,7 @@ The pybind extension is emitted directly into `src/{{ module_name }}` on both pl
 
 ## Continuous integration
 
-Pushing this project to GitHub automatically runs `.github/workflows/build-and-test.yml` on Windows and Linux. Pull requests and manual runs also trigger it. The workflow invokes `python scripts/bootstrap.py` and `python scripts/validate.py --wheel`; those scripts build and test the project, validate the sdist/wheel, and check that `pkgconf` was neither installed nor acquired.
+GitHub automatically runs `.github/workflows/build-and-test.yml` on Windows and Linux for pushes and pull requests **unless all changed files are under `docs/development/`**. Changes outside that directory (including mixed documentation/code changes) still trigger it, and manual runs remain available via `workflow_dispatch`. Reserve `docs/development/` for specifications, audits and execution evidence—not executable build/test inputs or code-generation sources. The workflow invokes `python scripts/bootstrap.py` and `python scripts/validate.py --wheel`; those scripts build and test the project, validate the sdist/wheel, and check that `pkgconf` was neither installed nor acquired.
 
 ## Installable C++ library
 
