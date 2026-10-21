@@ -24,12 +24,13 @@ def run(*args, cwd=None):
     command = [str(arg) for arg in args]
     print(f"[{cwd or Path.cwd()}] {shlex.join(command)}", flush=True)
     result = subprocess.run(command, cwd=cwd, text=True, stdout=subprocess.PIPE,
-                            stderr=subprocess.STDOUT, check=True)
+                            stderr=subprocess.STDOUT, encoding="utf-8", errors="replace")
     print(result.stdout, end="", flush=True)
+    result.check_returncode()
     return result.stdout.strip()
 
 
-def verify(project, before, source, commit, readme, implementation, infrastructure):
+def verify(project, before, source, commit, expected_readme, implementation, infrastructure):
     answers = yaml.safe_load((project / NEW).read_text(encoding="utf-8"))
     assert answers["_src_path"] == source, answers
     assert answers["_commit"] == commit, answers
@@ -38,10 +39,7 @@ def verify(project, before, source, commit, readme, implementation, infrastructu
     assert not (project / OLD).exists()
     assert list(project.glob(".copier-answers*.y*ml")) == [project / NEW]
     assert (project / "cpp/src/playground_specific.cpp").read_bytes() == implementation
-    # The only upstream README change is the answers filename/update command.
-    expected = readme.replace(OLD.encode(), NEW.encode()).replace(
-        b"copier update --vcs-ref", b"copier update -a " + NEW.encode() + b" --vcs-ref")
-    assert (project / "README.md").read_bytes() == expected
+    assert (project / "README.md").read_bytes() == expected_readme
     for path, content in infrastructure.items():
         assert (project / path).read_bytes() == content, path
     assert not list(project.rglob("*.rej"))
@@ -65,6 +63,13 @@ def main():
     copier = [sys.executable, "-m", "copier"]
     assert run(*copier, "--version").split()[-1] == "9.19.1"
     with tempfile.TemporaryDirectory(prefix="answers-migration-") as temporary:
+        if source == str(ROOT):
+            # PR CI checks out a detached synthetic merge commit. Make that
+            # exact commit reachable in a disposable mirror on every platform.
+            mirror = Path(temporary) / "template.git"
+            run("git", "clone", "--mirror", ROOT, mirror)
+            run("git", "fetch", ROOT, f"{target}:refs/heads/migration-target", cwd=mirror)
+            source = str(mirror)
         project = args.project.resolve() if args.project else Path(temporary) / "project"
         project.mkdir(parents=True, exist_ok=True)
         assert not any(p.name != ".git" for p in project.iterdir()), "Project must be empty"
@@ -83,6 +88,14 @@ def main():
         flags = [item for key, value in data.items() for item in ("-d", f"{key}={value}")]
         run(*copier, "copy", "--defaults", "--vcs-ref", BASELINE,
             *flags, source, project)
+        # Use a fresh rendering solely as the expected README, so independently
+        # added upstream documentation is retained in merge-ref CI checkouts.
+        expected_project = Path(temporary) / "expected-target"
+        run(*copier, "copy", "--defaults", "--vcs-ref", target,
+            *flags, source, expected_project)
+        generated_readme = (expected_project / "README.md").read_bytes()
+        section = b"\n## Playground-specific work\n\nKeep this project-specific section during Copier updates.\n"
+        expected_readme = generated_readme + section
         before = yaml.safe_load((project / OLD).read_text(encoding="utf-8"))
         # Copier uses git describe, rather than necessarily recording the raw SHA.
         if Path(source).is_dir():
@@ -97,7 +110,7 @@ def main():
         baseline = run("git", "rev-parse", "HEAD", cwd=project)
         source_file = project / "cpp/src/playground_specific.cpp"
         source_file.write_text("// Project-specific implementation retained across Copier updates.\n"
-                               "int playground_answer() { return 42; }\n", encoding="utf-8")
+                               "int playground_answer() { return 42; }\n", encoding="utf-8", newline="\n")
         readme_file = project / "README.md"
         with readme_file.open("a", encoding="utf-8", newline="\n") as stream:
             stream.write("\n## Playground-specific work\n\nKeep this project-specific section during Copier updates.\n")
@@ -124,24 +137,21 @@ def main():
             ours = run("git", "show", ":2:README.md", cwd=project) + "\n"
             theirs = run("git", "show", ":3:README.md", cwd=project) + "\n"
             assert ours.encode() == readme
-            resolved = readme.replace(OLD.encode(), NEW.encode()).replace(
-                b"copier update --vcs-ref", b"copier update -a " + NEW.encode() + b" --vcs-ref")
-            section = b"\n## Playground-specific work\n\nKeep this project-specific section during Copier updates.\n"
-            assert theirs.encode() + section == resolved
+            assert theirs.encode() == generated_readme
             print("Explicit README conflict resolution: retain updated Copier instructions AND the entire local section.", flush=True)
-            readme_file.write_bytes(resolved)
+            readme_file.write_bytes(expected_readme)
             run("git", "add", "README.md", cwd=project)
         # Copier's recorded ref is git describe of the target, verified to SHA.
         target_record = yaml.safe_load((project / NEW).read_text(encoding="utf-8"))["_commit"]
         assert run("git", "rev-parse", target_record, cwd=ROOT) == target
-        verify(project, before, source, target_record, readme, implementation, infrastructure)
+        verify(project, before, source, target_record, expected_readme, implementation, infrastructure)
         run("git", "merge-base", "--is-ancestor", baseline, "HEAD", cwd=project)
         assert set(run("git", "diff", "HEAD", "--name-only", cwd=project).splitlines()) == {NEW, "README.md"}
         run("git", "add", ".", cwd=project)
         run("git", "commit", "-m", "Update renamed answers to pinned candidate template", cwd=project)
         migration = run("git", "rev-parse", "HEAD", cwd=project)
         run(*copier, "update", "--defaults", "-a", NEW, "--vcs-ref", target, cwd=project)
-        verify(project, before, source, target_record, readme, implementation, infrastructure)
+        verify(project, before, source, target_record, expected_readme, implementation, infrastructure)
         assert not run("git", "status", "--porcelain", "--untracked-files=all", cwd=project)
         assert run("git", "rev-parse", "HEAD", cwd=project) == migration
         print(json.dumps({"verdict": "PASS", "baseline_commit": baseline,
