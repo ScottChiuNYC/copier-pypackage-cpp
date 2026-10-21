@@ -79,9 +79,9 @@ def main():
     generated_ci = yaml.load(workflow, Loader=yaml.BaseLoader)
     assert generated_ci["on"]["push"]["paths-ignore"] == ["docs/development/**"]
     assert generated_ci["on"]["pull_request"]["paths-ignore"] == ["docs/development/**"]
-    assert generated_ci["on"]["workflow_dispatch"] is None
+    assert not generated_ci["on"]["workflow_dispatch"]
     template_ci = yaml.load(acceptance, Loader=yaml.BaseLoader)
-    assert template_ci["on"]["push"] is None and template_ci["on"]["pull_request"] is None
+    assert not template_ci["on"]["push"] and not template_ci["on"]["pull_request"]
     assert "paths-ignore" not in template_ci["on"]
     assert "docs/development/" in (project / "README.md").read_text(encoding="utf-8")
 
