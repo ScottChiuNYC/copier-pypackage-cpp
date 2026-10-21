@@ -120,4 +120,4 @@ Local source changes do not change vcpkg's port recipe hash. Use a fresh consume
 
 ## Template updates
 
-Commit `.copier-answers.yml` and project changes before `copier update --vcs-ref <template-tag>`. Template Git tags version updates independently of your project's version.
+Commit `{{ _copier_conf.answers_file }}` and project changes before `copier update -a {{ _copier_conf.answers_file }} --vcs-ref <template-tag>`. Template Git tags version updates independently of your project's version.

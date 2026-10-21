@@ -1,5 +1,6 @@
 _min_copier_version: "9.19.1"
 _subdirectory: template
+_answers_file: .copier-answers.pypackage-cpp.yml
 
 project_name:
   type: str
