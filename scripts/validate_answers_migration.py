@@ -115,12 +115,28 @@ def main():
         assert (project / NEW).read_bytes() == original_answers
         run("git", "commit", "-m", "Rename Copier answers without changing provenance", cwd=project)
         run(*copier, "update", "--defaults", "-a", NEW, "--vcs-ref", target, cwd=project)
+        # A local section appended beside an upstream README edit can conflict.
+        # Resolve only this known fixture conflict after checking both Git stages;
+        # never accept arbitrary conflicts or silently drop either side.
+        conflicts = run("git", "diff", "--name-only", "--diff-filter=U", cwd=project).splitlines()
+        if conflicts:
+            assert conflicts == ["README.md"], conflicts
+            ours = run("git", "show", ":2:README.md", cwd=project) + "\n"
+            theirs = run("git", "show", ":3:README.md", cwd=project) + "\n"
+            assert ours.encode() == readme
+            resolved = readme.replace(OLD.encode(), NEW.encode()).replace(
+                b"copier update --vcs-ref", b"copier update -a " + NEW.encode() + b" --vcs-ref")
+            section = b"\n## Playground-specific work\n\nKeep this project-specific section during Copier updates.\n"
+            assert theirs.encode() + section == resolved
+            print("Explicit README conflict resolution: retain updated Copier instructions AND the entire local section.", flush=True)
+            readme_file.write_bytes(resolved)
+            run("git", "add", "README.md", cwd=project)
         # Copier's recorded ref is git describe of the target, verified to SHA.
         target_record = yaml.safe_load((project / NEW).read_text(encoding="utf-8"))["_commit"]
         assert run("git", "rev-parse", target_record, cwd=ROOT) == target
         verify(project, before, source, target_record, readme, implementation, infrastructure)
         run("git", "merge-base", "--is-ancestor", baseline, "HEAD", cwd=project)
-        assert set(run("git", "diff", "--name-only", cwd=project).splitlines()) == {NEW, "README.md"}
+        assert set(run("git", "diff", "HEAD", "--name-only", cwd=project).splitlines()) == {NEW, "README.md"}
         run("git", "add", ".", cwd=project)
         run("git", "commit", "-m", "Update renamed answers to pinned candidate template", cwd=project)
         migration = run("git", "rev-parse", "HEAD", cwd=project)
@@ -132,7 +148,7 @@ def main():
                           "migration_commit": migration, "template_candidate": target,
                           "old_template_record": before["_commit"], "new_template_record": target_record,
                           "source": source, "branch": run("git", "branch", "--show-current", cwd=project),
-                          "preserved_other_files": len(infrastructure), "second_update_clean": True}, indent=2))
+                          "preserved_other_files": len(infrastructure), "second_update_clean": True, "resolved_conflicts": conflicts}, indent=2))
 
 
 if __name__ == "__main__":
