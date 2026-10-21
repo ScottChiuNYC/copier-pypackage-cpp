@@ -63,14 +63,16 @@ def main():
     copier = [sys.executable, "-m", "copier"]
     assert run(*copier, "--version").split()[-1] == "9.19.1"
     with tempfile.TemporaryDirectory(prefix="answers-migration-") as temporary:
+        # Git expands Windows 8.3 TEMP paths; use the same canonical path.
+        work = Path(temporary).resolve()
         if source == str(ROOT):
             # PR CI checks out a detached synthetic merge commit. Make that
             # exact commit reachable in a disposable mirror on every platform.
-            mirror = Path(temporary) / "template.git"
+            mirror = work / "template.git"
             run("git", "clone", "--mirror", ROOT, mirror)
             run("git", "fetch", ROOT, f"{target}:refs/heads/migration-target", cwd=mirror)
             source = str(mirror)
-        project = args.project.resolve() if args.project else Path(temporary) / "project"
+        project = args.project.resolve() if args.project else work / "project"
         project.mkdir(parents=True, exist_ok=True)
         assert not any(p.name != ".git" for p in project.iterdir()), "Project must be empty"
         if not (project / ".git").exists():
@@ -90,7 +92,7 @@ def main():
             *flags, source, project)
         # Use a fresh rendering solely as the expected README, so independently
         # added upstream documentation is retained in merge-ref CI checkouts.
-        expected_project = Path(temporary) / "expected-target"
+        expected_project = work / "expected-target"
         run(*copier, "copy", "--defaults", "--vcs-ref", target,
             *flags, source, expected_project)
         generated_readme = (expected_project / "README.md").read_bytes()
