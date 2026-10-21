@@ -74,6 +74,17 @@ def main():
         job = ci["jobs"]["validate"]
         assert set(job["strategy"]["matrix"]["os"]) == {"ubuntu-latest", "windows-2022"}
         assert [step["run"] for step in job["steps"] if "run" in step] == ["python scripts/bootstrap.py", command]
+    # Generated build CI must ignore docs/development-only changes, not mixed/code changes.
+    # Template acceptance itself remains a normal push/PR/manual validation workflow.
+    generated_ci = yaml.load(workflow, Loader=yaml.BaseLoader)
+    assert generated_ci["on"]["push"]["paths-ignore"] == ["docs/development/**"]
+    assert generated_ci["on"]["pull_request"]["paths-ignore"] == ["docs/development/**"]
+    assert not generated_ci["on"]["workflow_dispatch"]
+    template_ci = yaml.load(acceptance, Loader=yaml.BaseLoader)
+    assert not template_ci["on"]["push"] and not template_ci["on"]["pull_request"]
+    assert "paths-ignore" not in template_ci["on"]
+    assert "docs/development/" in (project / "README.md").read_text(encoding="utf-8")
+
     config = json.loads((project / "vcpkg-configuration.json").read_text(encoding="utf-8"))
     assert config["default-registry"]["repository"] == "https://github.com/microsoft/vcpkg"
     assert config["overlay-ports"] == ["vcpkg-ports"]
