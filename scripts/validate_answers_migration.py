@@ -126,8 +126,9 @@ def main():
         run("git", "commit", "-m", "Add project implementation and generated README customization", cwd=project)
         implementation = source_file.read_bytes()
         readme = readme_file.read_bytes()
-        # Every other generated file must be byte-for-byte unchanged, including
-        # all CMake/vcpkg/Python/pybind11/Actions and docs/development exclusions.
+        # Every other generated file must be byte-for-byte unchanged. README,
+        # gitignore, the CodeBinder fragment, and the Project Skeleton Contract
+        # are explicit template-owned migration surfaces in this fixture.
         infrastructure = {path: (project / path).read_bytes()
                           for path in run("git", "ls-files", cwd=project).splitlines()
                           if path not in (OLD, "README.md", ".gitignore", "docs/development/PROJECT_SKELETON_CONTRACT.md", "cpp/src/playground_specific.cpp")}
@@ -161,7 +162,7 @@ def main():
         run("git", "commit", "-m", "Update renamed answers to pinned candidate template", cwd=project)
         migration = run("git", "rev-parse", "HEAD", cwd=project)
         run(*copier, "update", "--defaults", "-a", NEW, "--vcs-ref", target, cwd=project)
-        verify(project, before, source, target_record, expected_readme, expected_gitignore, expected_fragment, implementation, infrastructure)
+        verify(project, before, source, target_record, expected_readme, expected_gitignore, expected_fragment, expected_contract, implementation, infrastructure)
         assert not run("git", "status", "--porcelain", "--untracked-files=all", cwd=project)
         assert run("git", "rev-parse", "HEAD", cwd=project) == migration
         print(json.dumps({"verdict": "PASS", "baseline_commit": baseline,
