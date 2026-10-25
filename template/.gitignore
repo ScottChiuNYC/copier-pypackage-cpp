@@ -267,3 +267,8 @@ __marimo__/
 .dev-tools/
 
 *.pyd
+
+# CodeBinder uses the Unix-style .d convention for composable ignore fragments.
+# Keep that configuration directory tracked despite the generic C++ *.d rule.
+!.codebinderignore.d/
+!.codebinderignore.d/**
