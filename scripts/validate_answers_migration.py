@@ -152,7 +152,9 @@ def main():
         assert run("git", "rev-parse", target_record, cwd=ROOT) == target
         verify(project, before, source, target_record, expected_readme, expected_gitignore, expected_fragment, implementation, infrastructure)
         run("git", "merge-base", "--is-ancestor", baseline, "HEAD", cwd=project)
-        assert set(run("git", "diff", "HEAD", "--name-only", cwd=project).splitlines()) == {NEW, "README.md", ".gitignore", ".codebinderignore.d/pypackage-cpp"}
+        assert set(run("git", "diff", "HEAD", "--name-only", cwd=project).splitlines()) == {NEW, "README.md", ".gitignore"}
+        status_before_commit = run("git", "status", "--porcelain", "--untracked-files=all", cwd=project).splitlines()
+        assert "?? .codebinderignore.d/pypackage-cpp" in status_before_commit, status_before_commit
         run("git", "add", ".", cwd=project)
         run("git", "commit", "-m", "Update renamed answers to pinned candidate template", cwd=project)
         migration = run("git", "rev-parse", "HEAD", cwd=project)
