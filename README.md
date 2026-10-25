@@ -2,6 +2,19 @@
 
 Poetry packaging, a C++17 static core and a pybind11 extension. This repository is migrated in place from Cookiecutter; it now uses the `copier-` repository name.
 
+## Role and ownership
+
+This repository owns the reusable **Python/C++ build, packaging, dependency, test, and CI skeleton**. It is deliberately independent from [ART](https://github.com/ScottChiuNYC/agentic-repo-template), which may be applied as a second Copier overlay to add agent routing and repository-PDF publication.
+
+A downstream project can therefore carry two independent provenance files:
+
+```text
+.copier-answers.pypackage-cpp.yml  -> this template
+.copier-answers.art.yml            -> ART
+```
+
+Do not make either template own or rewrite the other's answers file or generated infrastructure. The broader repository map and cross-template update flow are documented in ART's [ecosystem architecture](https://github.com/ScottChiuNYC/agentic-repo-template/blob/main/docs/ecosystem-architecture.md).
+
 ## Generate and update a project
 
 ```bash
@@ -16,6 +29,18 @@ copier update -a .copier-answers.pypackage-cpp.yml
 ```
 
 Copier records answers and the template version in `.copier-answers.pypackage-cpp.yml`; commit it. Release versions are Git tags. The template lives under `template/`, so template metadata and its Git history are not copied into generated projects. Existing Cookiecutter-generated projects need deliberate adoption and review before using Copier updates; this migration does not rewrite those projects.
+
+## CodeBinder review-PDF integration
+
+This template may contribute review exclusions through:
+
+```text
+.codebinderignore.d/pypackage-cpp
+```
+
+That fragment removes build/package/editor plumbing that is necessary to operate the project but adds little signal when reviewing ICC/C2C results. It does **not** own the optional project-level `.codebinderignore` or ART's `.codebinderignore.d/art` fragment.
+
+The review policy is conservative: domain source, headers, bindings, tests, examples, Essence/audit material, and C2C evidence remain visible by default. New substantive tracked content should appear unless deliberately classified as infrastructure noise.
 
 ## Fresh Work / Codex / developer setup
 

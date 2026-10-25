@@ -256,7 +256,27 @@ If a task genuinely changes a skeleton convention, update all affected pieces to
 
 Do not allow the executable skeleton and the written contract to drift apart.
 
-## 13. Developer/agent checklist
+## 13. Independent overlays and review publication
+
+This Project Skeleton Contract is authoritative for the generated project's build, package, dependency, layout, and test conventions. It does not make this template the owner of unrelated overlays.
+
+A project may independently apply ART. When both templates are present:
+
+- `.copier-answers.pypackage-cpp.yml` records this skeleton's provenance;
+- `.copier-answers.art.yml` records ART provenance;
+- ART owns its generated `AGENTS.md`, CodeBinder publication skill/workflow, and `.codebinderignore.d/art`;
+- this template owns `.codebinderignore.d/pypackage-cpp`;
+- an optional root `.codebinderignore` remains project-owned.
+
+The CodeBinder fragment is a **review presentation policy**, not build authority. It may hide CMake/vcpkg/packaging/editor plumbing from the review PDF while those files remain fully authoritative for actual builds. Do not infer that an ignored PDF file is unused by the project.
+
+Do not merge owner-specific ignore fragments into one shared generated file. Composable fragments exist so independent templates can evolve without creating Copier ownership conflicts.
+
+For the full cross-repository dependency and rollout model, see:
+
+https://github.com/ScottChiuNYC/agentic-repo-template/blob/main/docs/ecosystem-architecture.md
+
+## 14. Developer/agent checklist
 
 Before implementing a domain feature:
 
