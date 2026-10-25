@@ -1,0 +1,28 @@
+# Python/C++ template infrastructure that is useful for building the project
+# but adds little signal when reviewing ICC/C2C contract, implementation, and
+# verification output.
+
+.copier-answers.pypackage-cpp.yml
+.github/workflows/build-and-test.yml
+.vscode/**
+.python-version
+
+CMakeLists.txt
+CMakePresets.json
+**/CMakeLists.txt
+cmake/**
+
+build.py
+cnb.bat
+cnp.bat
+upgrade_package.bat
+
+pyproject.toml
+scripts/**
+
+vcpkg.json
+vcpkg-configuration.json
+vcpkg-ports/**
+
+docs/development/PROJECT_SKELETON_CONTRACT.md
+LICENSE
