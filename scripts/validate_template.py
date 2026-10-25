@@ -68,6 +68,7 @@ def main():
     assert answers["_commit"] == "v1.0.0"
     assert answers["vcpkg_port_name"] == "ci-packaged-library"
     assert (project / "vcpkg-ports/ci-packaged-library/portfile.cmake").exists()
+    assert (project / ".codebinderignore.d/pypackage-cpp").exists()
     workflow = (project / ".github/workflows/build-and-test.yml").read_text(encoding="utf-8")
     assert "${{ matrix.os }}" in workflow and "{%" not in workflow and "cookiecutter." not in workflow
     acceptance = (ROOT / ".github/workflows/template-acceptance.yml").read_text(encoding="utf-8")
@@ -170,6 +171,7 @@ def main():
     assert "// Retain this user source edit." in source.read_text(encoding="utf-8")
     assert (upgraded / "cmake/LibraryConfig.cmake.in").exists()
     assert (upgraded / "vcpkg-ports" / after["vcpkg_port_name"] / "portfile.cmake").exists()
+    assert (upgraded / ".codebinderignore.d/pypackage-cpp").exists()
     assert not list(upgraded.rglob("*.rej"))
     run([py, upgraded / "scripts/validate_vcpkg.py"], cwd=upgraded, env=env)
     print("Previous-master Copier packaging update passed: answers, user file/source edits, and independent consumer.", flush=True)

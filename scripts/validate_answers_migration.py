@@ -30,7 +30,7 @@ def run(*args, cwd=None):
     return result.stdout.strip()
 
 
-def verify(project, before, source, commit, expected_readme, implementation, infrastructure):
+def verify(project, before, source, commit, expected_readme, expected_gitignore, expected_fragment, implementation, infrastructure):
     answers = yaml.safe_load((project / NEW).read_text(encoding="utf-8"))
     assert answers["_src_path"] == source, answers
     assert answers["_commit"] == commit, answers
@@ -40,6 +40,8 @@ def verify(project, before, source, commit, expected_readme, implementation, inf
     assert list(project.glob(".copier-answers*.y*ml")) == [project / NEW]
     assert (project / "cpp/src/playground_specific.cpp").read_bytes() == implementation
     assert (project / "README.md").read_bytes() == expected_readme
+    assert (project / ".gitignore").read_bytes() == expected_gitignore
+    assert (project / ".codebinderignore.d/pypackage-cpp").read_bytes() == expected_fragment
     for path, content in infrastructure.items():
         assert (project / path).read_bytes() == content, path
     assert not list(project.rglob("*.rej"))
@@ -96,6 +98,8 @@ def main():
         run(*copier, "copy", "--defaults", "--vcs-ref", target,
             *flags, source, expected_project)
         generated_readme = (expected_project / "README.md").read_bytes()
+        expected_gitignore = (expected_project / ".gitignore").read_bytes()
+        expected_fragment = (expected_project / ".codebinderignore.d/pypackage-cpp").read_bytes()
         section = b"\n## Playground-specific work\n\nKeep this project-specific section during Copier updates.\n"
         expected_readme = generated_readme + section
         before = yaml.safe_load((project / OLD).read_text(encoding="utf-8"))
@@ -124,7 +128,7 @@ def main():
         # all CMake/vcpkg/Python/pybind11/Actions and docs/development exclusions.
         infrastructure = {path: (project / path).read_bytes()
                           for path in run("git", "ls-files", cwd=project).splitlines()
-                          if path not in (OLD, "README.md", "cpp/src/playground_specific.cpp")}
+                          if path not in (OLD, "README.md", ".gitignore", "cpp/src/playground_specific.cpp")}
         original_answers = (project / OLD).read_bytes()
         run("git", "mv", OLD, NEW, cwd=project)
         assert (project / NEW).read_bytes() == original_answers
@@ -146,14 +150,16 @@ def main():
         # Copier's recorded ref is git describe of the target, verified to SHA.
         target_record = yaml.safe_load((project / NEW).read_text(encoding="utf-8"))["_commit"]
         assert run("git", "rev-parse", target_record, cwd=ROOT) == target
-        verify(project, before, source, target_record, expected_readme, implementation, infrastructure)
+        verify(project, before, source, target_record, expected_readme, expected_gitignore, expected_fragment, implementation, infrastructure)
         run("git", "merge-base", "--is-ancestor", baseline, "HEAD", cwd=project)
-        assert set(run("git", "diff", "HEAD", "--name-only", cwd=project).splitlines()) == {NEW, "README.md"}
+        assert set(run("git", "diff", "HEAD", "--name-only", cwd=project).splitlines()) == {NEW, "README.md", ".gitignore"}
+        status_before_commit = run("git", "status", "--porcelain", "--untracked-files=all", cwd=project).splitlines()
+        assert "?? .codebinderignore.d/pypackage-cpp" in status_before_commit, status_before_commit
         run("git", "add", ".", cwd=project)
         run("git", "commit", "-m", "Update renamed answers to pinned candidate template", cwd=project)
         migration = run("git", "rev-parse", "HEAD", cwd=project)
         run(*copier, "update", "--defaults", "-a", NEW, "--vcs-ref", target, cwd=project)
-        verify(project, before, source, target_record, expected_readme, implementation, infrastructure)
+        verify(project, before, source, target_record, expected_readme, expected_gitignore, expected_fragment, implementation, infrastructure)
         assert not run("git", "status", "--porcelain", "--untracked-files=all", cwd=project)
         assert run("git", "rev-parse", "HEAD", cwd=project) == migration
         print(json.dumps({"verdict": "PASS", "baseline_commit": baseline,
