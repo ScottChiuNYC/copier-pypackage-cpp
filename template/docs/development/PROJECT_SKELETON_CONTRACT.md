@@ -293,3 +293,16 @@ Before implementing a domain feature:
 The reconstruction rule is:
 
 > **Project Skeleton Contract + domain implementation specification + referenced mathematical/domain specifications must be sufficient for a fresh developer or AI agent to implement the in-scope functionality without inventing repository-layout, build, dependency, packaging, or test conventions.**
+
+## 13. Coding standards (non-formatting policy)
+
+The canonical external references are the [Google C++ Style Guide](https://google.github.io/styleguide/cppguide.html) and [Python PEP 8](https://peps.python.org/pep-0008/). Use them for **new or materially edited code** (including declarations, tests, examples, bindings, and client code), subject to the existing repository APIs and the following project-specific precedence:
+
+- For C++, use Google conventions for naming, 2-space indentation, include ordering, braces and comments; maintain clear mathematical alignment where it improves readability. Python-exposed names follow PEP 8, even when bound to C++ PascalCase functions.
+- For Python, use PEP 8 (4-space indentation, snake_case functions, CapWords classes, organized imports). Preserve intentionally readable mathematical layouts.
+- Existing C++ `.cpp` files, the `hello()` sample API, C++17 baseline, and existing exception semantics are **compatibility decisions**, not invitations to silently rename sources, break clients, raise the language version, or change error handling. Existing code is grandfathered until an explicitly scoped change; new filenames should follow the project's established build and packaging conventions. A future `.cc` migration must update CMake discovery, packaging, consumers and tests together.
+- Preserve intentionally aligned mathematical tables, matrices and coefficient definitions; readability and local context take precedence over mechanical reflow.
+- **Do not run auto-formatters or introduce formatting-only CI gates.** Tools such as clang-format or Ruff format are optional, manually invoked aids only, never mandatory or applied repo-wide by an agent. Non-mutating lint reports may assist focused review but are not blanket approval gates.
+- Review *changed lines* for reasonable compliance. Never make a drive-by mass-reformatting commit, especially while propagating Copier updates. If style conflicts with a frozen public interface or domain requirement, preserve behavior and document/escalate the conflict rather than silently change the contract.
+
+These conventions are Project Boundary mechanics: ICC includes them when producing illustrative code or interface declarations without repeating them in each Essence; C2C applies them to generated implementations, acceptance tests and reviews. Domain acceptance criteria remain independent of cosmetic formatting.
