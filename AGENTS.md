@@ -22,6 +22,12 @@ https://github.com/ScottChiuNYC/agentic-repo-template/blob/main/docs/ecosystem-a
 - Do not consolidate independently owned CodeBinder fragments into a shared generated file.
 - Treat the generated Project Skeleton Contract as project-local authority for repository mechanics.
 
+## Coding policy
+
+- The generated Project Skeleton Contract is authoritative for C++ Google-style and Python PEP 8 conventions, including documented compatibility exceptions.
+- Generate and edit code in the project's established style. Do not add mandatory auto-formatters, formatting-only CI gates, or mass-reformat existing code.
+- Review changed code for style manually, keeping unrelated diffs out of infrastructure migrations.
+
 ## Change rules
 
 - Validate template behavior with the repository's existing bootstrap and template-acceptance paths.
