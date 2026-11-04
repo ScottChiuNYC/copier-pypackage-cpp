@@ -105,8 +105,26 @@ def main():
     assert "scratch" not in (project / "cpp/CMakeLists.txt").read_text(encoding="utf-8")
     if sys.platform == "linux":
         run(["bash", project / "scripts/build_scratch.sh", project / "scratch/hello.cpp"], cwd=project)
-        result = subprocess.check_output([project / "build/scratch/hello"], cwd=project, text=True)
-        assert result.strip() == "Scratch C++ F5 is ready."
+        executable = project / "build/scratch/hello"
+    elif sys.platform == "win32":
+        # Test the real MSVC scratch build without opening the VS Code GUI.
+        vswhere = Path(os.environ["ProgramFiles(x86)"]) / "Microsoft Visual Studio/Installer/vswhere.exe"
+        installation = subprocess.check_output(
+            [vswhere, "-latest", "-products", "*", "-requires",
+             "Microsoft.VisualStudio.Component.VC.Tools.x86.x64",
+             "-property", "installationPath"], text=True).strip()
+        assert installation, "Visual Studio C++ tools not installed"
+        devcmd = Path(installation) / "Common7/Tools/VsDevCmd.bat"
+        smoke = work / "scratch-smoke.bat"
+        smoke.write_text(
+            f'@echo off\ncall "{devcmd}" -arch=amd64 -host_arch=amd64 >nul\n'
+            f'if errorlevel 1 exit /b %errorlevel%\n'
+            f'call "{project / "scripts/build_scratch.bat"}" "{project / "scratch/hello.cpp"}"\n'
+            f'exit /b %errorlevel%\n', encoding="utf-8")
+        run(["cmd.exe", "/d", "/c", smoke], cwd=project)
+        executable = project / "build/scratch/hello.exe"
+    result = subprocess.check_output([executable], cwd=project, text=True)
+    assert result.strip() == "Scratch C++ F5 is ready."
 
 
     config = json.loads((project / "vcpkg-configuration.json").read_text(encoding="utf-8"))
