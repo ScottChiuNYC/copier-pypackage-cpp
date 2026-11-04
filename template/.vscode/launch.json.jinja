@@ -9,6 +9,26 @@
             "stopAtEntry": false,
             "preLaunchTask": "CMake: build (Debug)",
             "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "Scratch: active C++ file (Windows)",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}\\build\\scratch\\${fileBasenameNoExtension}.exe",
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "Scratch: build active C++ (Windows)",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Scratch: active C++ file (Linux)",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/scratch/${fileBasenameNoExtension}",
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "Scratch: build active C++ (Linux)",
+            "MIMode": "gdb",
+            "miDebuggerPath": "gdb",
+            "externalConsole": false
         }
     ]
 }

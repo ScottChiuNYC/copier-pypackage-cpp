@@ -63,6 +63,23 @@ python scripts/bootstrap.py --vcpkg-root /absolute/path/to/vcpkg
 
 That checkout must already match the declared baseline and is not checked out to another version. Re-running bootstrap reuses installed tools and downloads. Use `--work-dir .validation` on validation to keep generated artifacts; that directory must be empty. The two repositories maintain their own scripts and their independent project architectures.
 
+## Standalone C++ scratch / VS Code F5
+
+Generated projects include `scratch/hello.cpp`, portable Windows/Linux
+active-file F5 configurations, and `open_vscode.bat` for MSVC development.
+On Windows, double-click `open_vscode.bat` from the generated project root
+(Visual Studio 2022 C++ tools and VS Code's `code.cmd` must be installed);
+the launcher discovers MSVC with `vswhere` and `VsDevCmd.bat` without
+hardcoding a personal installation path. Close stale VS Code instances first.
+Open `scratch/hello.cpp`, choose the Windows scratch debug configuration,
+and press F5. On Linux, use the Linux scratch configuration with `c++` and
+`gdb` on PATH. Program output appears in the integrated terminal;
+generated compiler outputs stay under ignored `build/scratch/`.
+
+Scratch sources stay outside `cpp/src/`, CMake targets, packaging, and
+production tests. They compile as single files; use CMake for linked
+experiments. The generated README documents full usage and prerequisites.
+
 ## Validation and CI
 
 The validation script exercises default/custom Copier copy, real `v1.0.0` → `v1.1.0` updates in an isolated fixture, preservation of local README edits, answer/version persistence, identifier rejection and GitHub expression rendering. It then bootstraps the generated sample's own tool environment (reusing the pinned vcpkg checkout) and runs validation with the original runner Python and PATH, matching an unactivated generated-project workflow. This catches Windows executable lookup failures that an inherited template tool PATH would hide. Tool launches resolve executable paths before starting subprocesses, since Windows does not use the child's PATH for that lookup. Validation configures/builds the sample, runs its original tests, builds an sdist, rebuilds a platform wheel from that sdist, installs the wheel in a clean virtual environment, and imports its native extension outside the source checkout.

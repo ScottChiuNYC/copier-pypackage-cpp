@@ -88,6 +88,26 @@ def main():
     assert not template_ci["on"]["push"] and not template_ci["on"]["pull_request"]
     assert "paths-ignore" not in template_ci["on"]
     assert "docs/development/" in (project / "README.md").read_text(encoding="utf-8")
+    # Scratch F5 configs must refer to generated tasks; the executable is
+    # independent of CMake, and the selected C++ standard is consistent.
+    launch = json.loads((project / ".vscode/launch.json").read_text(encoding="utf-8"))
+    tasks = json.loads((project / ".vscode/tasks.json").read_text(encoding="utf-8"))
+    labels = {task["label"] for task in tasks["tasks"]}
+    assert all(cfg["preLaunchTask"] in labels for cfg in launch["configurations"])
+    scratch_names = {cfg["name"] for cfg in launch["configurations"]
+                     if cfg["name"].startswith("Scratch:")}
+    assert scratch_names == {"Scratch: active C++ file (Windows)",
+                             "Scratch: active C++ file (Linux)"}
+    assert (project / "scratch/hello.cpp").exists()
+    assert (project / "open_vscode.bat").exists()
+    assert "/std:c++17" in (project / "scripts/build_scratch.bat").read_text(encoding="utf-8")
+    assert "-std=c++17" in (project / "scripts/build_scratch.sh").read_text(encoding="utf-8")
+    assert "scratch" not in (project / "cpp/CMakeLists.txt").read_text(encoding="utf-8")
+    if sys.platform == "linux":
+        run(["bash", project / "scripts/build_scratch.sh", project / "scratch/hello.cpp"], cwd=project)
+        result = subprocess.check_output([project / "build/scratch/hello"], cwd=project, text=True)
+        assert result.strip() == "Scratch C++ F5 is ready."
+
 
     config = json.loads((project / "vcpkg-configuration.json").read_text(encoding="utf-8"))
     assert config["default-registry"]["repository"] == "https://github.com/microsoft/vcpkg"
