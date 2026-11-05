@@ -1,6 +1,6 @@
 # Project Skeleton Contract
 
-Contract version: 1.1
+Contract version: 1.2
 
 ## 1. Purpose
 
@@ -48,6 +48,9 @@ project root
 ├── pyproject.toml
 ├── vcpkg.json
 ├── vcpkg-configuration.json
+├── open_vscode.bat
+├── scratch/
+│   └── hello.cpp
 ├── cpp/
 │   ├── CMakeLists.txt
 │   ├── include/
@@ -98,6 +101,23 @@ C++ GoogleTest sources belong under `tests/cpp/`. Python pytest sources belong u
 The baseline C++ test CMake file discovers top-level `tests/cpp/*.cpp`. If tests are reorganized into nested directories or multiple executables, update CMake explicitly.
 
 Domain specifications own **what must be tested**. This skeleton owns **where tests live and how they are registered**. Examples are not substitutes for tests.
+
+### 3.6 Standalone scratch programs
+
+Single-file exploratory C++ programs live in `scratch/`, each with its own
+`main()`. This directory is **not included by CMake**, library packaging, or
+production CI; experimental entry points must not be added to `cpp/src/`.
+VS Code's generated scratch launch/tasks configurations call the platform-specific
+`scripts/build_scratch.*` wrapper and output to ignored `build/scratch/`.
+The scratch compiler standard must follow the Copier-selected C++ standard.
+
+On Windows, `open_vscode.bat` discovers Visual Studio's C++ compiler with
+`vswhere`, initializes `VsDevCmd.bat`, and starts VS Code with that environment.
+It resolves the project directory relative to the launcher, never a personal
+absolute path. Linux uses the available C++ compiler and GDB for debugging.
+These editor conveniences are not build authorities and cannot replace CMake
+for code requiring compiled library sources or dependencies. Promote successful
+experiments into proper targets and tests before treating them as production work.
 
 ## 4. CMake contract
 

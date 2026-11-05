@@ -15,6 +15,42 @@ Requires Python 3.12+, Git and a platform C++17 toolchain (GCC/Clang on Linux; V
 
 The scripts supply tool paths automatically, including Ninja inside vcpkg compiler detection. Compiler tracking remains enabled. No shell activation or manual path setup is required.
 
+## Standalone C++ scratch / F5 debugging
+
+The `scratch/` directory is for independent experiments with their own `main()`.
+It is deliberately **outside CMake**: these programs are not linked into the
+core library, packaged, or run as production tests. Keep reusable implementation
+in `cpp/` and permanent regression tests in `tests/`.
+
+**Windows (Visual Studio 2022 + VS Code + Microsoft C/C++ extension):**
+
+1. Double-click `open_vscode.bat` in the project root. It discovers MSVC via
+   `vswhere`, initializes the x64 Developer environment, and launches VS Code.
+   Close previously running VS Code windows first if they have stale compiler
+   environment variables. The launcher needs `code.cmd` on PATH.
+2. Open `scratch/hello.cpp`. In Run and Debug, select
+   **Scratch: active C++ file (Windows)**, then press **F5**.
+3. Read output in the **integrated terminal**. Edit or add other self-contained
+   `scratch/*.cpp` programs with their own `main()`; press F5 again.
+
+**Linux (GCC/Clang, GDB, VS Code + Microsoft C/C++ extension):**
+
+1. Open the project in VS Code with a C++ compiler (`c++`) and `gdb` on PATH.
+2. Open `scratch/hello.cpp`, select **Scratch: active C++ file (Linux)**,
+   and press **F5**. Set `CXX` if you want a different compiler executable.
+
+Both build tasks compile **only the active file**, using the Copier-selected
+C++{{ cpp_standard }} standard and debug symbols. Binaries and intermediate
+outputs are stored in ignored `build/scratch/`. The executable name uses
+the active file's basename; avoid reusing basenames across scratch programs.
+
+**Limitations:** Active-file compilation is for standalone code and header-only
+experiments. If a program needs multiple translation units, linked libraries,
+vcpkg dependencies, or project-specific compiler flags, add a proper CMake
+executable/test target instead. The existing **C++ Launch (Windows)**
+configuration still debugs the CMake test executable. Scratch builds do not
+replace `python scripts/validate.py` or CI.
+
 ## Development contract
 
 Before adding implementation, dependencies, bindings, tests, or build-system changes, read [`docs/development/PROJECT_SKELETON_CONTRACT.md`](docs/development/PROJECT_SKELETON_CONTRACT.md). It is the normative guide to this project's C++/Python source layout, dependency wiring, packaging, build, test, and CI extension points.

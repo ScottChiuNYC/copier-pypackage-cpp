@@ -5,6 +5,8 @@
 .copier-answers.pypackage-cpp.yml
 .github/workflows/build-and-test.yml
 .vscode/**
+open_vscode.bat
+scratch/**
 .python-version
 
 CMakeLists.txt

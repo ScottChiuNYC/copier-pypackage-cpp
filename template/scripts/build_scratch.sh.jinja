@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ $# -ne 1 || ! -f "$1" ]]; then
+    echo "Usage: bash scripts/build_scratch.sh scratch/<file>.cpp" >&2
+    exit 2
+fi
+
+project_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source_file="$(realpath "$1")"
+output_dir="$project_root/build/scratch"
+mkdir -p "$output_dir"
+
+name="$(basename "$source_file")"
+name="${name%.*}"
+"${CXX:-c++}" -std=c++{{ cpp_standard }} -g -O0 "$source_file" -o "$output_dir/$name"

@@ -9,7 +9,9 @@
                 "--preset",
                 "windows-vcpkg"
             ],
-            "problemMatcher": ["$msCompile"]
+            "problemMatcher": [
+                "$msCompile"
+            ]
         },
         {
             "label": "CMake: build (Debug)",
@@ -20,12 +22,16 @@
                 "--preset",
                 "windows-debug"
             ],
-            "dependsOn": ["CMake: configure (Windows)"],
+            "dependsOn": [
+                "CMake: configure (Windows)"
+            ],
             "group": {
                 "kind": "build",
                 "isDefault": true
             },
-            "problemMatcher": ["$msCompile"]
+            "problemMatcher": [
+                "$msCompile"
+            ]
         },
         {
             "label": "CMake: build (Release)",
@@ -36,9 +42,13 @@
                 "--preset",
                 "windows-release"
             ],
-            "dependsOn": ["CMake: configure (Windows)"],
+            "dependsOn": [
+                "CMake: configure (Windows)"
+            ],
             "group": "build",
-            "problemMatcher": ["$msCompile"]
+            "problemMatcher": [
+                "$msCompile"
+            ]
         },
         {
             "label": "CTest: run (Debug)",
@@ -48,8 +58,33 @@
                 "--preset",
                 "windows-debug-tests"
             ],
-            "dependsOn": ["CMake: build (Debug)"],
+            "dependsOn": [
+                "CMake: build (Debug)"
+            ],
             "problemMatcher": []
+        },
+        {
+            "label": "Scratch: build active C++ (Windows)",
+            "type": "shell",
+            "command": "${workspaceFolder}\\scripts\\build_scratch.bat",
+            "args": [
+                "${file}"
+            ],
+            "problemMatcher": [
+                "$msCompile"
+            ]
+        },
+        {
+            "label": "Scratch: build active C++ (Linux)",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "${workspaceFolder}/scripts/build_scratch.sh",
+                "${file}"
+            ],
+            "problemMatcher": [
+                "$gcc"
+            ]
         }
     ]
 }

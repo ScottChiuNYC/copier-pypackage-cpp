@@ -88,6 +88,52 @@ def main():
     assert not template_ci["on"]["push"] and not template_ci["on"]["pull_request"]
     assert "paths-ignore" not in template_ci["on"]
     assert "docs/development/" in (project / "README.md").read_text(encoding="utf-8")
+    # Scratch F5 configs must refer to generated tasks; the executable is
+    # independent of CMake, and the selected C++ standard is consistent.
+    launch = json.loads((project / ".vscode/launch.json").read_text(encoding="utf-8"))
+    tasks = json.loads((project / ".vscode/tasks.json").read_text(encoding="utf-8"))
+    labels = {task["label"] for task in tasks["tasks"]}
+    assert all(cfg["preLaunchTask"] in labels for cfg in launch["configurations"])
+    scratch_names = {cfg["name"] for cfg in launch["configurations"]
+                     if cfg["name"].startswith("Scratch:")}
+    assert scratch_names == {"Scratch: active C++ file (Windows)",
+                             "Scratch: active C++ file (Linux)"}
+    assert (project / "scratch/hello.cpp").exists()
+    assert (project / "open_vscode.bat").exists()
+    assert "/std:c++17" in (project / "scripts/build_scratch.bat").read_text(encoding="utf-8")
+    assert "-std=c++17" in (project / "scripts/build_scratch.sh").read_text(encoding="utf-8")
+    assert "scratch" not in (project / "cpp/CMakeLists.txt").read_text(encoding="utf-8")
+    if sys.platform == "linux":
+        run(["bash", project / "scripts/build_scratch.sh", "scratch/hello.cpp"], cwd=project)
+        executable = project / "build/scratch/hello"
+        # C++ alternate extensions must yield the same binary stem as VS Code.
+        alternate = project / "scratch/alternate.cc"
+        alternate.write_text((project / "scratch/hello.cpp").read_text(encoding="utf-8"),
+                             encoding="utf-8")
+        run(["bash", project / "scripts/build_scratch.sh", "scratch/alternate.cc"], cwd=project)
+        alt_result = subprocess.check_output([project / "build/scratch/alternate"],
+                                             cwd=project, text=True)
+        assert alt_result.strip() == "Scratch C++ F5 is ready."
+    elif sys.platform == "win32":
+        # Test the real MSVC scratch build without opening the VS Code GUI.
+        vswhere = Path(os.environ["ProgramFiles(x86)"]) / "Microsoft Visual Studio/Installer/vswhere.exe"
+        installation = subprocess.check_output(
+            [vswhere, "-latest", "-products", "*", "-requires",
+             "Microsoft.VisualStudio.Component.VC.Tools.x86.x64",
+             "-property", "installationPath"], text=True).strip()
+        assert installation, "Visual Studio C++ tools not installed"
+        devcmd = Path(installation) / "Common7/Tools/VsDevCmd.bat"
+        smoke = work / "scratch-smoke.bat"
+        smoke.write_text(
+            f'@echo off\ncall "{devcmd}" -arch=amd64 -host_arch=amd64 >nul\n'
+            f'if errorlevel 1 exit /b %errorlevel%\n'
+            f'call "{project / "scripts/build_scratch.bat"}" scratch\\hello.cpp\n'
+            f'exit /b %errorlevel%\n', encoding="utf-8")
+        run(["cmd.exe", "/d", "/c", smoke], cwd=project)
+        executable = project / "build/scratch/hello.exe"
+    result = subprocess.check_output([executable], cwd=project, text=True)
+    assert result.strip() == "Scratch C++ F5 is ready."
+
 
     config = json.loads((project / "vcpkg-configuration.json").read_text(encoding="utf-8"))
     assert config["default-registry"]["repository"] == "https://github.com/microsoft/vcpkg"
