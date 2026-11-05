@@ -104,8 +104,16 @@ def main():
     assert "-std=c++17" in (project / "scripts/build_scratch.sh").read_text(encoding="utf-8")
     assert "scratch" not in (project / "cpp/CMakeLists.txt").read_text(encoding="utf-8")
     if sys.platform == "linux":
-        run(["bash", project / "scripts/build_scratch.sh", project / "scratch/hello.cpp"], cwd=project)
+        run(["bash", project / "scripts/build_scratch.sh", "scratch/hello.cpp"], cwd=project)
         executable = project / "build/scratch/hello"
+        # C++ alternate extensions must yield the same binary stem as VS Code.
+        alternate = project / "scratch/alternate.cc"
+        alternate.write_text((project / "scratch/hello.cpp").read_text(encoding="utf-8"),
+                             encoding="utf-8")
+        run(["bash", project / "scripts/build_scratch.sh", "scratch/alternate.cc"], cwd=project)
+        alt_result = subprocess.check_output([project / "build/scratch/alternate"],
+                                             cwd=project, text=True)
+        assert alt_result.strip() == "Scratch C++ F5 is ready."
     elif sys.platform == "win32":
         # Test the real MSVC scratch build without opening the VS Code GUI.
         vswhere = Path(os.environ["ProgramFiles(x86)"]) / "Microsoft Visual Studio/Installer/vswhere.exe"
@@ -119,7 +127,7 @@ def main():
         smoke.write_text(
             f'@echo off\ncall "{devcmd}" -arch=amd64 -host_arch=amd64 >nul\n'
             f'if errorlevel 1 exit /b %errorlevel%\n'
-            f'call "{project / "scripts/build_scratch.bat"}" "{project / "scratch/hello.cpp"}"\n'
+            f'call "{project / "scripts/build_scratch.bat"}" scratch\\hello.cpp\n'
             f'exit /b %errorlevel%\n', encoding="utf-8")
         run(["cmd.exe", "/d", "/c", smoke], cwd=project)
         executable = project / "build/scratch/hello.exe"

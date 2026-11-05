@@ -29,7 +29,7 @@ if errorlevel 1 (
     goto :error
 )
 
-call code.cmd --new-window "%PROJECT%"
+call code.cmd --new-window .
 exit /b 0
 
 :error
